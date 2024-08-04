@@ -16,18 +16,18 @@ const scopeSeparator = " "
 export function showDefinitions(payload) {
   return {
     type: SHOW_AUTH_POPUP,
-    payload: payload
+    payload: payload,
   }
 }
 
 export function authorize(payload) {
   return {
     type: AUTHORIZE,
-    payload: payload
+    payload: payload,
   }
 }
 
-export const authorizeWithPersistOption = (payload) => ( { authActions } ) => {
+export const authorizeWithPersistOption = (payload) => ({ authActions }) => {
   authActions.authorize(payload)
   authActions.persistAuthorizationIfNeeded()
 }
@@ -35,38 +35,38 @@ export const authorizeWithPersistOption = (payload) => ( { authActions } ) => {
 export function logout(payload) {
   return {
     type: LOGOUT,
-    payload: payload
+    payload: payload,
   }
 }
 
-export const logoutWithPersistOption = (payload) => ( { authActions } ) => {
+export const logoutWithPersistOption = (payload) => ({ authActions }) => {
   authActions.logout(payload)
   authActions.persistAuthorizationIfNeeded()
 }
 
-export const preAuthorizeImplicit = (payload) => ( { authActions, errActions } ) => {
-  let { auth , token, isValid } = payload
+export const preAuthorizeImplicit = (payload) => ({ authActions, errActions }) => {
+  let { auth, token, isValid } = payload
   let { schema, name } = auth
   let flow = schema.get("flow")
 
   // remove oauth2 property from window after redirect from authentication
   delete win.swaggerUIRedirectOauth2
 
-  if ( flow !== "accessCode" && !isValid ) {
-    errActions.newAuthErr( {
+  if (flow !== "accessCode" && !isValid) {
+    errActions.newAuthErr({
       authId: name,
       source: "auth",
       level: "warning",
-      message: "Authorization may be unsafe, passed state was changed in server Passed state wasn't returned from auth server"
+      message: "Authorization may be unsafe, passed state was changed in server Passed state wasn't returned from auth server",
     })
   }
 
-  if ( token.error ) {
+  if (token.error) {
     errActions.newAuthErr({
       authId: name,
       source: "auth",
       level: "error",
-      message: JSON.stringify(token)
+      message: JSON.stringify(token),
     })
     return
   }
@@ -78,24 +78,28 @@ export const preAuthorizeImplicit = (payload) => ( { authActions, errActions } )
 export function authorizeOauth2(payload) {
   return {
     type: AUTHORIZE_OAUTH2,
-    payload: payload
+    payload: payload,
   }
 }
 
 
-export const authorizeOauth2WithPersistOption = (payload) => ( { authActions } ) => {
+export const authorizeOauth2WithPersistOption = (payload) => ({ authActions }) => {
   authActions.authorizeOauth2(payload)
   authActions.persistAuthorizationIfNeeded()
 }
 
-export const authorizePassword = ( auth ) => ( { authActions } ) => {
-  let { schema, name, username, password, passwordType, clientId, clientSecret } = auth
+export const authorizePassword = (auth) => ({ authActions }) => {
+  let { schema, name, username, password, passwordType, clientId, clientSecret, resource } = auth
   let form = {
     grant_type: "password",
     scope: auth.scopes.join(scopeSeparator),
     username,
-    password
+    password,
   }
+  if (resource && resource.length) {
+    form.resource = resource
+  }
+  console.log(form)
   let query = {}
   let headers = {}
 
@@ -111,64 +115,92 @@ export const authorizePassword = ( auth ) => ( { authActions } ) => {
       console.warn(`Warning: invalid passwordType ${passwordType} was passed, not including client id and secret`)
   }
 
-  return authActions.authorizeRequest({ body: buildFormData(form), url: schema.get("tokenUrl"), name, headers, query, auth})
+  return authActions.authorizeRequest({
+    body: buildFormData(form),
+    url: schema.get("tokenUrl"),
+    name,
+    headers,
+    query,
+    auth,
+  })
 }
 
 function setClientIdAndSecret(target, clientId, clientSecret) {
-  if ( clientId ) {
-    Object.assign(target, {client_id: clientId})
+  if (clientId) {
+    Object.assign(target, { client_id: clientId })
   }
 
-  if ( clientSecret ) {
-    Object.assign(target, {client_secret: clientSecret})
+  if (clientSecret) {
+    Object.assign(target, { client_secret: clientSecret })
   }
 }
 
-export const authorizeApplication = ( auth ) => ( { authActions } ) => {
-  let { schema, scopes, name, clientId, clientSecret } = auth
+export const authorizeApplication = (auth) => ({ authActions }) => {
+  let { schema, scopes, name, clientId, clientSecret, resource } = auth
   let headers = {
-    Authorization: "Basic " + btoa(clientId + ":" + clientSecret)
+    Authorization: "Basic " + btoa(clientId + ":" + clientSecret),
   }
   let form = {
     grant_type: "client_credentials",
-    scope: scopes.join(scopeSeparator)
+    scope: scopes.join(scopeSeparator),
   }
 
-  return authActions.authorizeRequest({body: buildFormData(form), name, url: schema.get("tokenUrl"), auth, headers })
+  if (resource && resource.length) {
+    form.resource = resource
+  }
+  console.log(form)
+  return authActions.authorizeRequest({ body: buildFormData(form), name, url: schema.get("tokenUrl"), auth, headers })
 }
 
-export const authorizeAccessCodeWithFormParams = ( { auth, redirectUrl } ) => ( { authActions } ) => {
-  let { schema, name, clientId, clientSecret, codeVerifier } = auth
+export const authorizeAccessCodeWithFormParams = ({ auth, redirectUrl }) => ({ authActions }) => {
+  let { schema, name, clientId, clientSecret, codeVerifier, resource } = auth
   let form = {
     grant_type: "authorization_code",
     code: auth.code,
     client_id: clientId,
     client_secret: clientSecret,
     redirect_uri: redirectUrl,
-    code_verifier: codeVerifier
+    code_verifier: codeVerifier,
   }
 
-  return authActions.authorizeRequest({body: buildFormData(form), name, url: schema.get("tokenUrl"), auth})
+  if (resource && resource.length) {
+    form.resource = resource
+  }
+  console.log(form)
+  return authActions.authorizeRequest({ body: buildFormData(form), name, url: schema.get("tokenUrl"), auth })
 }
 
-export const authorizeAccessCodeWithBasicAuthentication = ( { auth, redirectUrl } ) => ( { authActions } ) => {
-  let { schema, name, clientId, clientSecret, codeVerifier } = auth
+export const authorizeAccessCodeWithBasicAuthentication = ({ auth, redirectUrl }) => ({ authActions }) => {
+  let { schema, name, clientId, clientSecret, codeVerifier, resource } = auth
   let headers = {
-    Authorization: "Basic " + btoa(clientId + ":" + clientSecret)
+    Authorization: "Basic " + btoa(clientId + ":" + clientSecret),
   }
   let form = {
     grant_type: "authorization_code",
     code: auth.code,
     client_id: clientId,
     redirect_uri: redirectUrl,
-    code_verifier: codeVerifier
+    code_verifier: codeVerifier,
   }
 
-  return authActions.authorizeRequest({body: buildFormData(form), name, url: schema.get("tokenUrl"), auth, headers})
+  if (resource && resource.length) {
+    form.resource = resource
+  }
+
+  console.log(form)
+  return authActions.authorizeRequest({ body: buildFormData(form), name, url: schema.get("tokenUrl"), auth, headers })
 }
 
-export const authorizeRequest = ( data ) => ( { fn, getConfigs, authActions, errActions, oas3Selectors, specSelectors, authSelectors } ) => {
-  let { body, query={}, headers={}, name, url, auth } = data
+export const authorizeRequest = (data) => ({
+                                             fn,
+                                             getConfigs,
+                                             authActions,
+                                             errActions,
+                                             oas3Selectors,
+                                             specSelectors,
+                                             authSelectors,
+                                           }) => {
+  let { body, query = {}, headers = {}, name, url, auth } = data
 
   let { additionalQueryStringParams } = authSelectors.getConfigs() || {}
 
@@ -181,16 +213,16 @@ export const authorizeRequest = ( data ) => ( { fn, getConfigs, authActions, err
     parsedUrl = parseUrl(url, specSelectors.url(), true)
   }
 
-  if(typeof additionalQueryStringParams === "object") {
+  if (typeof additionalQueryStringParams === "object") {
     parsedUrl.query = Object.assign({}, parsedUrl.query, additionalQueryStringParams)
   }
 
   const fetchUrl = parsedUrl.toString()
 
   let _headers = Object.assign({
-    "Accept":"application/json, text/plain, */*",
+    "Accept": "application/json, text/plain, */*",
     "Content-Type": "application/x-www-form-urlencoded",
-    "X-Requested-With": "XMLHttpRequest"
+    "X-Requested-With": "XMLHttpRequest",
   }, headers)
 
   fn.fetch({
@@ -200,78 +232,78 @@ export const authorizeRequest = ( data ) => ( { fn, getConfigs, authActions, err
     query: query,
     body: body,
     requestInterceptor: getConfigs().requestInterceptor,
-    responseInterceptor: getConfigs().responseInterceptor
+    responseInterceptor: getConfigs().responseInterceptor,
   })
-  .then(function (response) {
-    let token = JSON.parse(response.data)
-    let error = token && ( token.error || "" )
-    let parseError = token && ( token.parseError || "" )
+    .then(function(response) {
+      let token = JSON.parse(response.data)
+      let error = token && (token.error || "")
+      let parseError = token && (token.parseError || "")
 
-    if ( !response.ok ) {
-      errActions.newAuthErr( {
-        authId: name,
-        level: "error",
-        source: "auth",
-        message: response.statusText
-      } )
-      return
-    }
+      if (!response.ok) {
+        errActions.newAuthErr({
+          authId: name,
+          level: "error",
+          source: "auth",
+          message: response.statusText,
+        })
+        return
+      }
 
-    if ( error || parseError ) {
+      if (error || parseError) {
+        errActions.newAuthErr({
+          authId: name,
+          level: "error",
+          source: "auth",
+          message: JSON.stringify(token),
+        })
+        return
+      }
+
+      authActions.authorizeOauth2WithPersistOption({ auth, token })
+    })
+    .catch(e => {
+      let err = new Error(e)
+      let message = err.message
+      // swagger-js wraps the response (if available) into the e.response property;
+      // investigate to check whether there are more details on why the authorization
+      // request failed (according to RFC 6479).
+      // See also https://github.com/swagger-api/swagger-ui/issues/4048
+      if (e.response && e.response.data) {
+        const errData = e.response.data
+        try {
+          const jsonResponse = typeof errData === "string" ? JSON.parse(errData) : errData
+          if (jsonResponse.error)
+            message += `, error: ${jsonResponse.error}`
+          if (jsonResponse.error_description)
+            message += `, description: ${jsonResponse.error_description}`
+        } catch (jsonError) {
+          // Ignore
+        }
+      }
       errActions.newAuthErr({
         authId: name,
         level: "error",
         source: "auth",
-        message: JSON.stringify(token)
+        message: message,
       })
-      return
-    }
-
-    authActions.authorizeOauth2WithPersistOption({ auth, token})
-  })
-  .catch(e => {
-    let err = new Error(e)
-    let message = err.message
-    // swagger-js wraps the response (if available) into the e.response property;
-    // investigate to check whether there are more details on why the authorization
-    // request failed (according to RFC 6479).
-    // See also https://github.com/swagger-api/swagger-ui/issues/4048
-    if (e.response && e.response.data) {
-      const errData = e.response.data
-      try {
-        const jsonResponse = typeof errData === "string" ? JSON.parse(errData) : errData
-        if (jsonResponse.error)
-          message += `, error: ${jsonResponse.error}`
-        if (jsonResponse.error_description)
-          message += `, description: ${jsonResponse.error_description}`
-      } catch (jsonError) {
-        // Ignore
-      }
-    }
-    errActions.newAuthErr( {
-      authId: name,
-      level: "error",
-      source: "auth",
-      message: message
-    } )
-  })
+    })
 }
 
 export function configureAuth(payload) {
   return {
     type: CONFIGURE_AUTH,
-    payload: payload
+    payload: payload,
   }
 }
 
 export function restoreAuthorization(payload) {
   return {
     type: RESTORE_AUTHORIZATION,
-    payload: payload
+    payload: payload,
   }
 }
 
-export const persistAuthorizationIfNeeded = () => ( { authSelectors, getConfigs } ) => {
+export const persistAuthorizationIfNeeded = () => ({ authSelectors, getConfigs }) => {
   const configs = getConfigs()
 
   if (!configs.persistAuthorization) return
@@ -281,7 +313,7 @@ export const persistAuthorizationIfNeeded = () => ( { authSelectors, getConfigs 
   localStorage.setItem("authorized", JSON.stringify(authorized))
 }
 
-export const authPopup = (url, swaggerUIRedirectOauth2) => ( ) => {
+export const authPopup = (url, swaggerUIRedirectOauth2) => () => {
   win.swaggerUIRedirectOauth2 = swaggerUIRedirectOauth2
 
   win.open(url)

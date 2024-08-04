@@ -22,6 +22,7 @@ window.onload = function() {
   ui.initOAuth({
     clientId: "your-client-id",
     clientSecret: "your-client-secret-if-required",
+    resource: "your-resource-if-required",
     realm: "your-realms",
     appName: "your-app-name",
     scopeSeparator: " ",
