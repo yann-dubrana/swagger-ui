@@ -99,7 +99,6 @@ export const authorizePassword = (auth) => ({ authActions }) => {
   if (resource && resource.length) {
     form.resource = resource
   }
-  console.log(form)
   let query = {}
   let headers = {}
 
@@ -148,7 +147,7 @@ export const authorizeApplication = (auth) => ({ authActions }) => {
   if (resource && resource.length) {
     form.resource = resource
   }
-  console.log(form)
+
   return authActions.authorizeRequest({ body: buildFormData(form), name, url: schema.get("tokenUrl"), auth, headers })
 }
 
@@ -166,7 +165,7 @@ export const authorizeAccessCodeWithFormParams = ({ auth, redirectUrl }) => ({ a
   if (resource && resource.length) {
     form.resource = resource
   }
-  console.log(form)
+
   return authActions.authorizeRequest({ body: buildFormData(form), name, url: schema.get("tokenUrl"), auth })
 }
 
@@ -187,7 +186,7 @@ export const authorizeAccessCodeWithBasicAuthentication = ({ auth, redirectUrl }
     form.resource = resource
   }
 
-  console.log(form)
+
   return authActions.authorizeRequest({ body: buildFormData(form), name, url: schema.get("tokenUrl"), auth, headers })
 }
 
